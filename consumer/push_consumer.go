@@ -828,6 +828,7 @@ func (pc *pushConsumer) pullMessage(request *PullRequest) {
 		result, err := pc.client.PullMessage(context.Background(), brokerResult.BrokerAddr, pullRequest)
 		if err != nil {
 			rlog.Warning("pull message from broker error", map[string]interface{}{
+				rlog.LogKeyPullRequest:   request.String(),
 				rlog.LogKeyBroker:        brokerResult.BrokerAddr,
 				rlog.LogKeyUnderlayError: err.Error(),
 			})
