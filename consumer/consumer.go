@@ -930,7 +930,7 @@ func (dc *defaultConsumer) findConsumerList(topic string) []string {
 			ConsumerGroup: dc.consumerGroup,
 		}
 		cmd := remote.NewRemotingCommand(internal.ReqGetConsumerListByGroup, req, nil)
-		res, err := dc.client.InvokeSync(context.Background(), brokerAddr, cmd, 3*time.Second) // TODO 超时机制有问题
+		res, err := dc.client.InvokeSync(context.Background(), brokerAddr, cmd, 10*time.Second) // TODO 超时机制有问题
 		if err != nil {
 			rlog.Error("get consumer list of group from broker error", map[string]interface{}{
 				rlog.LogKeyConsumerGroup: dc.consumerGroup,
