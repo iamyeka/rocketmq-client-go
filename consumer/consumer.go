@@ -306,6 +306,9 @@ func (dc *defaultConsumer) shutdown() error {
 	})
 	dc.stat.ShutDownStat()
 	dc.storage.persist(mqs)
+	rlog.Info("shutdown defaultConsumer", map[string]interface{}{
+		"ClientID": dc.client.ClientID(),
+	})
 	dc.client.Shutdown()
 	return nil
 }

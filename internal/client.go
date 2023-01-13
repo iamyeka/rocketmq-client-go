@@ -382,8 +382,8 @@ func GetOrNewRocketMQClient(option ClientOptions, callbackCh chan interface{}) R
 }
 
 func (c *rmqClient) Start() {
-	//ctx, cancel := context.WithCancel(context.Background())
-	//c.cancel = cancel
+	// ctx, cancel := context.WithCancel(context.Background())
+	// c.cancel = cancel
 	c.once.Do(func() {
 
 		atomic.AddInt32(&c.instanceCount, 1)
@@ -519,11 +519,17 @@ func (c *rmqClient) removeClient() {
 }
 
 func (c *rmqClient) Shutdown() {
+	rlog.Info("shutdown rmqClient", map[string]interface{}{
+		"ClientID": c.ClientID(),
+	})
 	if atomic.AddInt32(&c.instanceCount, -1) > 0 {
 		return
 	}
 
 	c.shutdownOnce.Do(func() {
+		rlog.Info("close rmqClient done channel", map[string]interface{}{
+			"ClientID": c.ClientID(),
+		})
 		close(c.done)
 		c.close = true
 		c.remoteClient.ShutDown()
