@@ -975,6 +975,9 @@ func (pc *pushConsumer) ResetOffset(topic string, table map[primitive.MessageQue
 		mq := key.(primitive.MessageQueue)
 		pq := value.(*processQueue)
 		if _, ok := table[mq]; ok && mq.Topic == topic {
+			rlog.Info("ResetOffset will drop all pqs", map[string]interface{}{
+				rlog.LogKeyMessageQueue: mq.String(),
+			})
 			pq.WithDropped(true)
 			pq.clear()
 		}

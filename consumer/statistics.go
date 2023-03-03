@@ -422,7 +422,7 @@ func (si *statsItem) samplingInHour() {
 
 func (si *statsItem) printAtMinutes() {
 	ss := computeStatsData(&si.csListMinuteLock, si.csListMinute)
-	rlog.Info("Stats In One Minute.", map[string]interface{}{
+	rlog.Debug("Stats In One Minute.", map[string]interface{}{
 		"statsName": si.statsName,
 		"statsKey":  si.statsKey,
 		"SUM":       ss.sum,

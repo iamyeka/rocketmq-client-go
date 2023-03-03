@@ -272,7 +272,7 @@ func (r *remoteBrokerOffsetStore) persist(mqs []*primitive.MessageQueue) {
 				"offset":                 off,
 			})
 		} else {
-			rlog.Info("update offset to broker success", map[string]interface{}{
+			rlog.Debug("update offset to broker success", map[string]interface{}{
 				rlog.LogKeyConsumerGroup: r.group,
 				rlog.LogKeyMessageQueue:  mq.String(),
 				"offset":                 off,
@@ -323,7 +323,7 @@ func (r *remoteBrokerOffsetStore) readWithException(mq *primitive.MessageQueue, 
 			r.mutex.RUnlock()
 			return -1, err
 		}
-		rlog.Info("fetch offset of mq from broker success", map[string]interface{}{
+		rlog.Debug("fetch offset of mq from broker success", map[string]interface{}{
 			rlog.LogKeyConsumerGroup: r.group,
 			rlog.LogKeyMessageQueue:  mq.String(),
 			"offset":                 off,
@@ -369,7 +369,7 @@ func (r *remoteBrokerOffsetStore) fetchConsumeOffsetFromBroker(group string, mq 
 		QueueId:       mq.QueueId,
 	}
 	cmd := remote.NewRemotingCommand(internal.ReqQueryConsumerOffset, queryOffsetRequest, nil)
-	res, err := r.client.InvokeSync(context.Background(), broker, cmd, 3*time.Second)
+	res, err := r.client.InvokeSync(context.Background(), broker, cmd, 6*time.Second)
 	if err != nil {
 		return -1, err
 	}

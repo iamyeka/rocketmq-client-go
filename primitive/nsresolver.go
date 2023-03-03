@@ -173,7 +173,7 @@ func (h *HttpResolver) saveSnapshot(body []byte) error {
 		return err
 	}
 
-	rlog.Info("name server snapshot save successfully", map[string]interface{}{
+	rlog.Debug("name server snapshot save successfully", map[string]interface{}{
 		"filePath": filePath,
 	})
 	return nil

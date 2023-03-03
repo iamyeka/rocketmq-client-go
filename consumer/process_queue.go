@@ -20,7 +20,6 @@ package consumer
 import (
 	"strconv"
 	"sync"
-
 	"time"
 
 	"github.com/emirpasic/gods/maps/treemap"
@@ -36,7 +35,7 @@ import (
 const (
 	_RebalanceLockMaxTime = 30 * time.Second
 	_RebalanceInterval    = 20 * time.Second
-	_PullMaxIdleTime      = 120 * time.Second
+	_PullMaxIdleTime      = 3600 * time.Second
 )
 
 type processQueue struct {
@@ -230,8 +229,10 @@ func (pq *processQueue) isLockExpired() bool {
 	return time.Now().Sub(pq.LastLockTime()) > _RebalanceLockMaxTime
 }
 
-func (pq *processQueue) isPullExpired() bool {
-	return time.Now().Sub(pq.LastPullTime()) > _PullMaxIdleTime
+func (pq *processQueue) isPullExpired() (time.Time, bool) {
+	lastPullTime := pq.LastPullTime()
+	b := time.Now().Sub(lastPullTime) > _PullMaxIdleTime
+	return lastPullTime, b
 }
 
 func (pq *processQueue) cleanExpiredMsg(pc *pushConsumer) {

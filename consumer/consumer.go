@@ -682,12 +682,13 @@ func (dc *defaultConsumer) updateProcessQueueTable(topic string, mqs []*primitiv
 						rlog.LogKeyMessageQueue:  mq.String(),
 					})
 				}
-			} else if pq.isPullExpired() && dc.cType == _PushConsume {
+			} else if lastPullTime, timeout := pq.isPullExpired(); timeout && dc.cType == _PushConsume {
 				pq.WithDropped(true)
 				if dc.removeUnnecessaryMessageQueue(&mq, pq) {
 					dc.processQueueTable.Delete(key)
 					changed = true
 					rlog.Warning("remove unnecessary mq because pull was expired, prepare to fix it", map[string]interface{}{
+						"lastPullTime":           lastPullTime,
 						rlog.LogKeyConsumerGroup: dc.consumerGroup,
 						rlog.LogKeyMessageQueue:  mq.String(),
 					})
@@ -717,12 +718,12 @@ func (dc *defaultConsumer) updateProcessQueueTable(topic string, mqs []*primitiv
 		if nextOffset >= 0 && err == nil {
 			_, exist := dc.processQueueTable.Load(mq)
 			if exist {
-				rlog.Debug("updateProcessQueueTable do defaultConsumer, mq already exist", map[string]interface{}{
+				rlog.Info("updateProcessQueueTable do defaultConsumer, mq already exist", map[string]interface{}{
 					rlog.LogKeyConsumerGroup: dc.consumerGroup,
 					rlog.LogKeyMessageQueue:  mq.String(),
 				})
 			} else {
-				rlog.Debug("updateProcessQueueTable do defaultConsumer, add a new mq", map[string]interface{}{
+				rlog.Info("updateProcessQueueTable do defaultConsumer, add a new mq", map[string]interface{}{
 					rlog.LogKeyConsumerGroup: dc.consumerGroup,
 					rlog.LogKeyMessageQueue:  mq.String(),
 				})
@@ -741,6 +742,7 @@ func (dc *defaultConsumer) updateProcessQueueTable(topic string, mqs []*primitiv
 			rlog.Warning("do defaultConsumer, add a new mq failed", map[string]interface{}{
 				rlog.LogKeyConsumerGroup: dc.consumerGroup,
 				rlog.LogKeyMessageQueue:  mq.String(),
+				rlog.LogKeyUnderlayError: err,
 			})
 		}
 	}
@@ -934,7 +936,7 @@ func (dc *defaultConsumer) findConsumerList(topic string) []string {
 			ConsumerGroup: dc.consumerGroup,
 		}
 		cmd := remote.NewRemotingCommand(internal.ReqGetConsumerListByGroup, req, nil)
-		res, err := dc.client.InvokeSync(context.Background(), brokerAddr, cmd, 10*time.Second) // TODO 超时机制有问题
+		res, err := dc.client.InvokeSync(context.Background(), brokerAddr, cmd, 20*time.Second) // TODO 超时机制有问题
 		if err != nil {
 			rlog.Error("get consumer list of group from broker error", map[string]interface{}{
 				rlog.LogKeyConsumerGroup: dc.consumerGroup,
