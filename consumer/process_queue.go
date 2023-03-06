@@ -35,7 +35,7 @@ import (
 const (
 	_RebalanceLockMaxTime = 30 * time.Second
 	_RebalanceInterval    = 20 * time.Second
-	_PullMaxIdleTime      = 3600 * time.Second
+	_PullMaxIdleTime      = 7200 * time.Second
 )
 
 type processQueue struct {
