@@ -97,10 +97,17 @@ func (pq *processQueue) putMessage(messages ...*primitive.MessageExt) {
 	if len(messages) == 0 {
 		return
 	}
-	if pq.IsDroppd() {
+	if pq.IsDropped() {
 		return
 	}
 	pq.mutex.Lock()
+
+	// Check if msgCh is nil
+	if pq.msgCh == nil {
+		pq.mutex.Unlock()
+		return
+	}
+
 	validMessageCount := 0
 	for idx := range messages {
 		msg := messages[idx]
@@ -122,9 +129,9 @@ func (pq *processQueue) putMessage(messages ...*primitive.MessageExt) {
 	pq.mutex.Unlock()
 	if !pq.order {
 		select {
-		case <-pq.closeChan:
+		case <-pq.closeChan: // If closeChan signals that the queue is closing, return
 			return
-		case pq.msgCh <- messages:
+		case pq.msgCh <- messages: // Only attempt to send messages if msgCh is not nil
 		}
 	}
 
@@ -157,7 +164,7 @@ func (pq *processQueue) WithDropped(dropped bool) {
 	})
 }
 
-func (pq *processQueue) IsDroppd() bool {
+func (pq *processQueue) IsDropped() bool {
 	return pq.dropped.Load()
 }
 

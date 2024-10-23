@@ -629,7 +629,7 @@ func (pc *pushConsumer) pullMessage(request *PullRequest) {
 				return
 			default:
 				pc.submitToConsume(request.pq, request.mq)
-				if request.pq.IsDroppd() {
+				if request.pq.IsDropped() {
 					rlog.Info("push consumer quit pullMessage for dropped queue.", map[string]interface{}{
 						rlog.LogKeyConsumerGroup: pc.consumerGroup,
 					})
@@ -650,7 +650,7 @@ func (pc *pushConsumer) pullMessage(request *PullRequest) {
 		default:
 		}
 
-		if pq.IsDroppd() {
+		if pq.IsDropped() {
 			rlog.Debug("the request was dropped, so stop task", map[string]interface{}{
 				rlog.LogKeyPullRequest: request.String(),
 			})
@@ -1107,7 +1107,7 @@ func (pc *pushConsumer) consumeMessageConcurrently(pq *processQueue, mq *primiti
 				<-pc.crCh[mq.Topic]
 			}()
 		RETRY:
-			if pq.IsDroppd() {
+			if pq.IsDropped() {
 				rlog.Info("the message queue not be able to consume, because it was dropped", map[string]interface{}{
 					rlog.LogKeyMessageQueue:  mq.String(),
 					rlog.LogKeyConsumerGroup: pc.consumerGroup,
@@ -1148,7 +1148,7 @@ func (pc *pushConsumer) consumeMessageConcurrently(pq *processQueue, mq *primiti
 
 			pc.stat.increaseConsumeRT(pc.consumerGroup, mq.Topic, int64(consumeRT/time.Millisecond))
 
-			if !pq.IsDroppd() {
+			if !pq.IsDropped() {
 				msgBackFailed := make([]*primitive.MessageExt, 0)
 				msgBackSucceed := make([]*primitive.MessageExt, 0)
 				if result == ConsumeSuccess {
@@ -1177,7 +1177,7 @@ func (pc *pushConsumer) consumeMessageConcurrently(pq *processQueue, mq *primiti
 
 				offset := pq.removeMessage(msgBackSucceed...)
 
-				if offset >= 0 && !pq.IsDroppd() {
+				if offset >= 0 && !pq.IsDropped() {
 					pc.storage.update(mq, int64(offset), true)
 				}
 				if len(msgBackFailed) > 0 {
@@ -1196,7 +1196,7 @@ func (pc *pushConsumer) consumeMessageConcurrently(pq *processQueue, mq *primiti
 }
 
 func (pc *pushConsumer) consumeMessageOrderly(pq *processQueue, mq *primitive.MessageQueue) {
-	if pq.IsDroppd() {
+	if pq.IsDropped() {
 		rlog.Warning("the message queue not be able to consume, because it's dropped.", map[string]interface{}{
 			rlog.LogKeyMessageQueue: mq.String(),
 		})
@@ -1211,7 +1211,7 @@ func (pc *pushConsumer) consumeMessageOrderly(pq *processQueue, mq *primitive.Me
 
 		continueConsume := true
 		for continueConsume {
-			if pq.IsDroppd() {
+			if pq.IsDropped() {
 				rlog.Warning("the message queue not be able to consume, because it's dropped.", map[string]interface{}{
 					rlog.LogKeyMessageQueue: mq.String(),
 				})
@@ -1325,12 +1325,12 @@ func (pc *pushConsumer) consumeMessageOrderly(pq *processQueue, mq *primitive.Me
 				default:
 				}
 			}
-			if commitOffset > 0 && !pq.IsDroppd() {
+			if commitOffset > 0 && !pq.IsDropped() {
 				_ = pc.updateOffset(mq, commitOffset)
 			}
 		}
 	} else {
-		if pq.IsDroppd() {
+		if pq.IsDropped() {
 			rlog.Warning("the message queue not be able to consume, because it's dropped.", map[string]interface{}{
 				rlog.LogKeyMessageQueue: mq.String(),
 			})

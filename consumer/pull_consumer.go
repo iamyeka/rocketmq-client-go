@@ -211,7 +211,7 @@ func (pc *defaultPullConsumer) Poll(ctx context.Context, timeout time.Duration) 
 	case <-ctx.Done():
 		return nil, ErrNoNewMsg
 	case cr := <-pc.consumeRequestCache:
-		if cr.processQueue.IsDroppd() {
+		if cr.processQueue.IsDropped() {
 			rlog.Info("defaultPullConsumer poll the message queue not be able to consume, because it was dropped", map[string]interface{}{
 				rlog.LogKeyMessageQueue:  cr.messageQueue.String(),
 				rlog.LogKeyConsumerGroup: pc.consumerGroup,
@@ -237,7 +237,7 @@ func (pc *defaultPullConsumer) ACK(ctx context.Context, cr *ConsumeRequest, resu
 		return
 	}
 RETRY:
-	if pq.IsDroppd() {
+	if pq.IsDropped() {
 		rlog.Info("defaultPullConsumer the message queue not be able to consume, because it was dropped", map[string]interface{}{
 			rlog.LogKeyMessageQueue:  mq.String(),
 			rlog.LogKeyConsumerGroup: pc.consumerGroup,
@@ -273,7 +273,7 @@ RETRY:
 		})
 	}
 
-	if !pq.IsDroppd() {
+	if !pq.IsDropped() {
 		msgBackFailed := make([]*primitive.MessageExt, 0)
 		msgBackSucceed := make([]*primitive.MessageExt, 0)
 		if result == ConsumeSuccess {
@@ -302,7 +302,7 @@ RETRY:
 
 		offset := pq.removeMessage(msgBackSucceed...)
 
-		if offset >= 0 && !pq.IsDroppd() {
+		if offset >= 0 && !pq.IsDropped() {
 			pc.storage.update(mq, int64(offset), true)
 		}
 		if len(msgBackFailed) > 0 {
@@ -669,7 +669,7 @@ func (pc *defaultPullConsumer) pullMessage(request *PullRequest) {
 				return
 			default:
 				pc.submitToConsume(request.pq, request.mq)
-				if request.pq.IsDroppd() {
+				if request.pq.IsDropped() {
 					rlog.Info("defaultPullConsumer quit pullMessage for dropped queue.", map[string]interface{}{
 						rlog.LogKeyConsumerGroup: pc.consumerGroup,
 					})
@@ -689,7 +689,7 @@ func (pc *defaultPullConsumer) pullMessage(request *PullRequest) {
 		default:
 		}
 
-		if pq.IsDroppd() {
+		if pq.IsDropped() {
 			rlog.Debug("defaultPullConsumer the request was dropped, so stop task", map[string]interface{}{
 				rlog.LogKeyPullRequest: request.String(),
 			})
@@ -833,7 +833,7 @@ func (pc *defaultPullConsumer) consumeMessageConcurrently(pq *processQueue, mq *
 	if msgList == nil {
 		return
 	}
-	if pq.IsDroppd() {
+	if pq.IsDropped() {
 		rlog.Info("defaultPullConsumer consumeMessageConcurrently the message queue not be able to consume, because it was dropped", map[string]interface{}{
 			rlog.LogKeyMessageQueue:  mq.String(),
 			rlog.LogKeyConsumerGroup: pc.consumerGroup,
