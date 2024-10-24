@@ -85,7 +85,7 @@ func newProcessQueue(order bool) *processQueue {
 		consumingMsgOrderlyTreeMap: consumingMsgOrderlyTreeMap,
 		order:                      order,
 		closeChanOnce:              &sync.Once{},
-		closeChan:                  make(chan struct{}),
+		closeChan:                  make(chan struct{}, 1),
 		locked:                     atomic.NewBool(false),
 		dropped:                    atomic.NewBool(false),
 		maxOffsetInQueue:           -1,
@@ -94,6 +94,14 @@ func newProcessQueue(order bool) *processQueue {
 }
 
 func (pq *processQueue) putMessage(messages ...*primitive.MessageExt) {
+	defer func() {
+		if r := recover(); r != nil {
+			rlog.Error("Recovered from panic in putMessage", map[string]interface{}{
+				"error": r,
+			})
+		}
+	}()
+
 	if len(messages) == 0 {
 		return
 	}
@@ -101,13 +109,6 @@ func (pq *processQueue) putMessage(messages ...*primitive.MessageExt) {
 		return
 	}
 	pq.mutex.Lock()
-
-	// Check if msgCh is nil
-	if pq.msgCh == nil {
-		pq.mutex.Unlock()
-		return
-	}
-
 	validMessageCount := 0
 	for idx := range messages {
 		msg := messages[idx]
@@ -129,9 +130,13 @@ func (pq *processQueue) putMessage(messages ...*primitive.MessageExt) {
 	pq.mutex.Unlock()
 	if !pq.order {
 		select {
-		case <-pq.closeChan: // If closeChan signals that the queue is closing, return
+		case _, ok := <-pq.closeChan:
+			if ok {
+				close(pq.msgCh)
+			}
 			return
-		case pq.msgCh <- messages: // Only attempt to send messages if msgCh is not nil
+		default:
+			pq.msgCh <- messages
 		}
 	}
 
@@ -160,6 +165,7 @@ func (pq *processQueue) IsLock() bool {
 func (pq *processQueue) WithDropped(dropped bool) {
 	pq.dropped.Store(dropped)
 	pq.closeChanOnce.Do(func() {
+		pq.closeChan <- struct{}{}
 		close(pq.closeChan)
 	})
 }
